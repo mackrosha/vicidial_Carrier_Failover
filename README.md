@@ -113,5 +113,31 @@ exten => _10XXXXXXXXXX,n,Hangup
 
 This gives approximate 50/50 call distribution, though not exact sequencing like “first 25” and “next 25”.
 
+
+
+
+
+
+
+exten => _10XXXXXXXXXX,1,AGI(agi://127.0.0.1:4577/call_log)
+exten => _10XXXXXXXXXX,2,Set(RANDOM_CALL=$[${RAND(0,1)}])
+exten => _10XXXXXXXXXX,3,GotoIf($["${RANDOM_CALL}" = "0"]?try_reddata:try_icc)
+
+; ---- Try RedData First ----
+exten => _10XXXXXXXXXX,n(try_reddata),Set(CALLERID(num)=09640181202)
+exten => _10XXXXXXXXXX,n,Dial(SIP/${EXTEN:1}@JTI_RedData,,tTor)
+exten => _10XXXXXXXXXX,n,GotoIf($["${DIALSTATUS}" = "CONGESTION" | "${DIALSTATUS}" = "CHANUNAVAIL"]?try_icc:end)
+exten => _10XXXXXXXXXX,n(end),Hangup
+
+; ---- Try ICC First ----
+exten => _10XXXXXXXXXX,n(try_icc),Set(CALLERID(num)=09639143156)
+exten => _10XXXXXXXXXX,n,Dial(SIP/${EXTEN:1}@JTI_ICC,,tTor)
+exten => _10XXXXXXXXXX,n,GotoIf($["${DIALSTATUS}" = "CONGESTION" | "${DIALSTATUS}" = "CHANUNAVAIL"]?try_reddata:end)
+exten => _10XXXXXXXXXX,n(end),Hangup
+
+
 Thank you
+
+
+
 
